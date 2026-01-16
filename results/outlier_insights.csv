@@ -1,0 +1,2 @@
+total_trades,profitable_trades,outlier_trades,outlier_percentage,avg_outlier_pnl,avg_normal_pnl,outlier_contribution_pct,avg_outlier_duration_min,avg_normal_duration_min,outlier_avg_iv,normal_avg_iv,outlier_avg_delta,outlier_avg_gamma
+140,41,1,2.4390243902439024,461.91681274442817,107.42248337307274,9.706548822459746,1430.0,658.125,0.1399,0.12527125,0.5352249961148667,0.0005758506427865
