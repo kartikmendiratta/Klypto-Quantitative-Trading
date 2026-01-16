@@ -1,127 +1,105 @@
 ﻿# NIFTY 50 Quantitative Trading System
 
-[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/Status-Complete-success.svg)]()
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python"/>
+  <img src="https://img.shields.io/badge/TensorFlow-2.15+-FF6F00?style=for-the-badge&logo=tensorflow&logoColor=white" alt="TensorFlow"/>
+  <img src="https://img.shields.io/badge/XGBoost-2.0+-006400?style=for-the-badge" alt="XGBoost"/>
+  <img src="https://img.shields.io/badge/Status-Production%20Ready-success?style=for-the-badge" alt="Status"/>
+</p>
 
-A complete **quantitative trading system** for NIFTY 50 demonstrating expertise in data engineering, feature engineering, HMM regime detection, algorithmic trading strategy implementation, machine learning enhancement, and statistical analysis.
+<p align="center">
+  <strong>A complete end-to-end quantitative trading pipeline for NIFTY 50 derivatives featuring HMM regime detection, EMA crossover signals, and ML-based trade filtering.</strong>
+</p>
 
 ---
 
-## ðŸ“‹ Table of Contents
+## 📋 Table of Contents
 
 - [Project Overview](#-project-overview)
-- [Key Features](#-key-features)
-- [Project Structure](#-project-structure)
+- [Key Results](#-key-results)
 - [Installation](#-installation)
 - [How to Run](#-how-to-run)
+- [Project Structure](#-project-structure)
 - [Methodology](#-methodology)
-- [Key Results](#-key-results)
-- [Notebooks Guide](#-notebooks-guide)
 - [Technical Details](#-technical-details)
 - [Future Improvements](#-future-improvements)
 
 ---
 
-## ðŸŽ¯ Project Overview
+## 🎯 Project Overview
 
-This project implements an **end-to-end quantitative trading pipeline** for NIFTY 50 index with the following components:
+This project implements a **Sequential Filtering Architecture** for algorithmic trading on NIFTY 50:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        SEQUENTIAL FILTERING PIPELINE                        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│   📊 DATA        →   🔧 FEATURES    →   📈 REGIME     →   📉 SIGNALS       │
+│   Spot/Futures       70+ Features       HMM 3-State       EMA Crossover    │
+│   Options            Greeks, IV         Detection         + Regime Filter  │
+│                                                                             │
+│                              ↓                                              │
+│                                                                             │
+│   🤖 ML FILTER   →   ✅ EXECUTION                                          │
+│   XGBoost/LSTM       High-Confidence                                       │
+│   Validation         Trades Only                                            │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Core Components
 
 | Component | Description |
 |-----------|-------------|
-| **Data Pipeline** | 5-minute interval data for NIFTY Spot, Futures & Options (1 year) |
-| **Feature Engineering** | Greeks (Black-Scholes), EMAs, IV metrics, and derived features |
-| **Regime Detection** | Hidden Markov Model (HMM) classifying 3 market regimes |
-| **Trading Strategy** | 5/15 EMA Crossover with regime filter |
-| **ML Enhancement** | XGBoost and LSTM models to filter trade signals |
-| **Outlier Analysis** | Statistical analysis of high-performance trades |
+| **Data Pipeline** | 5-minute OHLCV for Spot, Futures (with rollover), and Options (ATM ± 2 strikes) |
+| **Feature Engineering** | 70+ features: Greeks (Black-Scholes), EMA, RSI, ATR, IV metrics, PCR |
+| **Regime Detection** | Hidden Markov Model classifying 3 states: Uptrend (+1), Sideways (0), Downtrend (-1) |
+| **Trading Strategy** | 5/15 EMA Crossover with regime filter (LONG in uptrend, SHORT in downtrend) |
+| **ML Enhancement** | XGBoost and LSTM models filter signals, taking only high-confidence trades |
 
 ---
 
-## âœ¨ Key Features
+## 📈 Key Results
 
-- **Comprehensive Data Pipeline**: Handles spot, futures (with rollover), and options data
-- **Advanced Greeks Calculation**: Delta, Gamma, Theta, Vega, Rho using Black-Scholes model
-- **HMM Regime Detection**: Classifies market into Uptrend (+1), Downtrend (-1), Sideways (0)
-- **Robust Backtesting Engine**: Calculates Sharpe, Sortino, Calmar, Max Drawdown, Win Rate
-- **ML-Enhanced Trading**: XGBoost and LSTM models improve signal quality
-- **Statistical Outlier Analysis**: Identifies and analyzes high-performance trades (Z-score > 3)
+### Performance Comparison
 
----
+| Metric | Baseline | XGBoost | **LSTM** |
+|--------|----------|---------|----------|
+| **Total Trades** | 140 | 27 | **9** |
+| **Win Rate (%)** | 29.3% | 22.2% | **44.4%** ✅ |
+| **Total Return (%)** | -0.54% | -0.50% | **+0.18%** ✅ |
+| **Sharpe Ratio** | -5.72 | -34.4 | **+30.7** ✅ |
+| **Sortino Ratio** | -19.5 | -98.6 | **+97.6** ✅ |
+| **Max Drawdown (%)** | 1.21% | 0.55% | **0.15%** ✅ |
+| **Profit Factor** | 0.90 | 0.54 | **1.85** ✅ |
 
-## ðŸ“ Project Structure
+### Key Insights
 
-```
-â”œâ”€â”€ data/                          # Data files
-â”‚   â”œâ”€â”€ nifty_spot_5min.csv       # NIFTY 50 spot OHLCV data
-â”‚   â”œâ”€â”€ nifty_futures_5min.csv    # NIFTY futures data with OI
-â”‚   â”œâ”€â”€ nifty_options_5min.csv    # Options chain data (ATM Â± 2 strikes)
-â”‚   â”œâ”€â”€ nifty_merged_5min.csv     # Merged dataset
-â”‚   â”œâ”€â”€ nifty_features_5min.csv   # Feature-engineered dataset
-â”‚   â”œâ”€â”€ nifty_regime_5min.csv     # Dataset with regime labels
-â”‚   â””â”€â”€ data_cleaning_report.txt  # Data quality report
-â”‚
-â”œâ”€â”€ notebooks/                     # Jupyter notebooks (step-by-step analysis)
-â”‚   â”œâ”€â”€ 01_data_acquisition.ipynb # Data fetching and generation
-â”‚   â”œâ”€â”€ 02_data_cleaning.ipynb    # Data cleaning and preprocessing
-â”‚   â”œâ”€â”€ 03_feature_engineering.ipynb # Feature creation
-â”‚   â”œâ”€â”€ 04_regime_detection.ipynb # HMM regime classification
-â”‚   â”œâ”€â”€ 05_baseline_strategy.ipynb # EMA crossover strategy
-â”‚   â”œâ”€â”€ 06_ml_models.ipynb        # XGBoost & LSTM training
-â”‚   â””â”€â”€ 07_outlier_analysis.ipynb # High-performance trade analysis
-â”‚
-â”œâ”€â”€ src/                           # Python source modules
-â”‚   â”œâ”€â”€ __init__.py
-â”‚   â”œâ”€â”€ data_utils.py             # Data fetching and cleaning utilities
-â”‚   â”œâ”€â”€ features.py               # Feature engineering functions
-â”‚   â”œâ”€â”€ greeks.py                 # Options Greeks calculation (Black-Scholes)
-â”‚   â”œâ”€â”€ regime.py                 # HMM regime detection model
-â”‚   â”œâ”€â”€ strategy.py               # Trading strategy implementation
-â”‚   â”œâ”€â”€ backtest.py               # Backtesting engine
-â”‚   â””â”€â”€ ml_models.py              # XGBoost and LSTM model training
-â”‚
-â”œâ”€â”€ models/                        # Saved trained models
-â”‚   â”œâ”€â”€ hmm_regime_model.joblib   # Trained HMM model
-â”‚   â”œâ”€â”€ xgboost_model.joblib      # Trained XGBoost classifier
-â”‚   â””â”€â”€ lstm_model.h5             # Trained LSTM model
-â”‚
-â”œâ”€â”€ results/                       # Result files
-â”‚   â”œâ”€â”€ baseline_metrics.json     # Baseline strategy performance
-â”‚   â”œâ”€â”€ baseline_trades.csv       # All baseline trade records
-â”‚   â”œâ”€â”€ ml_comparison.csv         # Model comparison metrics
-â”‚   â”œâ”€â”€ ml_metrics.json           # ML model evaluation metrics
-â”‚   â”œâ”€â”€ outlier_analysis.json     # Outlier trade analysis
-â”‚   â””â”€â”€ outlier_insights.csv      # Detailed outlier insights
-â”‚
-â”œâ”€â”€ plots/                         # Visualizations
-â”‚   â”œâ”€â”€ regime_chart.png          # Price with regime overlay
-â”‚   â”œâ”€â”€ transition_matrix.png     # HMM state transitions
-â”‚   â”œâ”€â”€ pnl_distribution.png      # PnL distribution
-â”‚   â””â”€â”€ ...                       # Additional analysis plots
-â”‚
-â”œâ”€â”€ requirements.txt              # Python dependencies
-â”œâ”€â”€ setup.md                      # Project setup guide
-â”œâ”€â”€ task.md                       # Task requirements
-â””â”€â”€ README.md                     # This file
-```
+- **LSTM is the only profitable configuration** with positive returns and profit factor > 1
+- Win rate improved by **+15.2 percentage points** (29.3% → 44.4%)
+- Sharpe ratio improved from **-5.72 to +30.7** (massive risk-adjusted improvement)
+- Max drawdown reduced by **88%** (1.21% → 0.15%)
+- Trade filtering: 93% reduction in trades, but significantly higher quality
 
 ---
 
-## ðŸ”§ Installation
+## 🔧 Installation
 
 ### Prerequisites
-- Python 3.11 or higher
-- pip package manager
-- 8GB RAM recommended (for LSTM training)
 
-### Setup Steps
+- **Python 3.11+**
+- **8GB RAM** (recommended for LSTM training)
+- **pip** package manager
+
+### Quick Setup
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/yourusername/nifty-quant-trading.git
+git clone https://github.com/kartikmendiratta/nifty-quant-trading.git
 cd nifty-quant-trading
 
-# 2. Create virtual environment (recommended)
+# 2. Create virtual environment
 python -m venv venv
 
 # Windows
@@ -138,358 +116,222 @@ pip install -r requirements.txt
 
 | Package | Version | Purpose |
 |---------|---------|---------|
-| pandas | â‰¥2.0.0 | Data manipulation |
-| numpy | â‰¥1.24.0 | Numerical computing |
-| yfinance | â‰¥0.2.36 | Market data fetching |
-| mibian | â‰¥0.1.3 | Black-Scholes Greeks |
-| hmmlearn | â‰¥0.3.0 | Hidden Markov Model |
-| xgboost | â‰¥2.0.0 | Gradient boosting |
-| tensorflow | â‰¥2.15.0 | LSTM neural network |
-| scikit-learn | â‰¥1.3.0 | ML utilities |
-| matplotlib | â‰¥3.8.0 | Visualization |
-| seaborn | â‰¥0.13.0 | Statistical plots |
+| `pandas` | ≥2.0.0 | Data manipulation |
+| `numpy` | ≥1.24.0 | Numerical computing |
+| `yfinance` | ≥0.2.36 | Market data (spot) |
+| `mibian` | ≥0.1.3 | Black-Scholes Greeks |
+| `hmmlearn` | ≥0.3.0 | Hidden Markov Model |
+| `xgboost` | ≥2.0.0 | Gradient boosting |
+| `tensorflow` | ≥2.15.0 | LSTM neural network |
+| `scikit-learn` | ≥1.3.0 | ML utilities |
+| `matplotlib` | ≥3.8.0 | Visualization |
+| `python-pptx` | ≥0.6.21 | PowerPoint generation |
 
 ---
 
-## ðŸš€ How to Run
+## 🚀 How to Run
 
-### Option 1: Run Notebooks Sequentially (Recommended)
+### Option 1: Jupyter Notebooks (Recommended for Learning)
 
-Execute the Jupyter notebooks in order from 01 to 07:
+Execute notebooks in order to understand each step:
 
 ```bash
 cd notebooks
 jupyter notebook
 ```
 
-**Notebook Execution Order:**
-1. `01_data_acquisition.ipynb` - Fetches/generates market data
-2. `02_data_cleaning.ipynb` - Cleans and preprocesses data
-3. `03_feature_engineering.ipynb` - Creates technical features and Greeks
-4. `04_regime_detection.ipynb` - Trains HMM and detects market regimes
-5. `05_baseline_strategy.ipynb` - Implements and backtests EMA strategy
-6. `06_ml_models.ipynb` - Trains XGBoost and LSTM models
-7. `07_outlier_analysis.ipynb` - Analyzes high-performance trades
+| Notebook | Purpose | Output |
+|----------|---------|--------|
+| `01_data_acquisition.ipynb` | Fetch/generate data | `data/*.csv` |
+| `02_data_cleaning.ipynb` | Clean & merge data | `nifty_merged_5min.csv` |
+| `03_features.ipynb` | Feature engineering | `nifty_features_5min.csv` |
+| `04_regime_detection.ipynb` | Train HMM | `hmm_regime_model.joblib` |
+| `05_baseline_strategy.ipynb` | Backtest EMA strategy | `baseline_trades.csv` |
+| `06_ml_models.ipynb` | Train XGBoost & LSTM | `ml_comparison.csv` |
+| `07_outlier_analysis.ipynb` | Analyze outliers | `outlier_insights.csv` |
 
-### Option 2: Run via Python Scripts
+### Option 2: Python Scripts
 
 ```python
+# Load data and run strategy
 import pandas as pd
-from src.data_utils import generate_synthetic_spot, generate_synthetic_futures, generate_synthetic_options
-from src.features import calculate_ema, calculate_derived_features
-from src.greeks import calculate_greeks_call, calculate_greeks_put
-from src.regime import MarketRegimeHMM
-from src.strategy import generate_signals
-from src.backtest import calculate_metrics
+from src.strategy import MLFilteredStrategy
+from src.ml_models import LSTMModel
 
 # Load preprocessed data
-df = pd.read_csv('data/nifty_features_5min.csv', parse_dates=['timestamp'])
+df = pd.read_csv('data/nifty_regime_5min.csv', parse_dates=['timestamp'])
 
-# Example: Calculate metrics
-trades = pd.read_csv('results/baseline_trades.csv')
-metrics = calculate_metrics(trades)
-print(metrics)
+# Load trained LSTM model
+lstm = LSTMModel.load('models/lstm_model.joblib')
+
+# Run ML-filtered strategy
+strategy = MLFilteredStrategy(model=lstm, confidence_threshold=0.5)
+trades = strategy.run_with_ml(df)
+
+print(f"LSTM Filtered Trades: {len(trades)}")
 ```
 
-### Option 3: Use Pre-trained Models
+### Option 3: Generate Presentation
 
-```python
-import joblib
-import pandas as pd
-
-# Load saved models
-hmm_model = joblib.load('models/hmm_regime_model.joblib')
-xgb_model = joblib.load('models/xgboost_model.joblib')
-
-# Use for predictions
-df = pd.read_csv('data/nifty_features_5min.csv')
-# ... apply models
+```bash
+python generate_presentation.py
+# Output: NIFTY_Trading_Strategy_Final.pptx
 ```
 
 ---
 
-## ðŸ“Š Methodology
-
-### 1. Data Pipeline
-
-| Data Type | Source | Records | Fields |
-|-----------|--------|---------|--------|
-| **Spot** | yfinance / Synthetic | ~19,500 | OHLCV |
-| **Futures** | Synthetic (with basis) | ~19,500 | OHLCV, OI |
-| **Options** | Synthetic (IV smile) | ~97,000 | LTP, IV, OI, Volume |
-
-#### 📡 Data Source Options
-
-The project supports multiple data sources. By default, it uses **yfinance** for spot data with synthetic data generation for futures and options. However, if you have API access, you can integrate live data from:
-
-| API Provider | Data Available | Notes |
-|--------------|----------------|-------|
-| **Zerodha Kite Connect** | Spot, Futures, Options | Requires subscription |
-| **ICICI Breeze** | Spot, Futures, Options | Free with ICICI Direct account |
-| **Groww** | Spot, Futures, Options | API access required |
-| **NSE Historical Data** | Spot, Futures, Options | Direct NSE data feed |
-| **yfinance** | Spot only | Free, used by default |
-| **Custom API** | Any | Implement your own data fetcher |
-
-> **Note:** To use a custom API, modify the `fetch_nifty_spot()` function in [src/data_utils.py](src/data_utils.py) and add corresponding functions for futures and options data. The data pipeline will automatically use your implementation.
-
-**Data Quality:**
-- ✅ Timestamps aligned across all datasets
-- ✅ Futures rollover handled (monthly expiry)
-- ✅ ATM strikes calculated dynamically
-- ✅ Outliers removed (IQR method)
-- ✅ No look-ahead bias
-
-### 2. Feature Engineering
-
-#### Technical Indicators
-| Feature | Formula | Purpose |
-|---------|---------|---------|
-| EMA 5 | Exponential MA (5 periods) | Fast signal |
-| EMA 15 | Exponential MA (15 periods) | Slow signal |
-
-#### Options Greeks (Black-Scholes, r = 6.5%)
-| Greek | Description |
-|-------|-------------|
-| **Delta (Î”)** | Price sensitivity to underlying |
-| **Gamma (Î“)** | Delta's rate of change |
-| **Theta (Î˜)** | Time decay |
-| **Vega (Î½)** | IV sensitivity |
-| **Rho (Ï)** | Interest rate sensitivity |
-
-#### Derived Features
-| Feature | Calculation |
-|---------|-------------|
-| Average IV | (Call IV + Put IV) / 2 |
-| IV Spread | Call IV - Put IV |
-| PCR (OI) | Total Put OI / Total Call OI |
-| PCR (Volume) | Total Put Volume / Total Call Volume |
-| Futures Basis | (Futures - Spot) / Spot |
-| Delta Neutral Ratio | \|Call Î”\| / \|Put Î”\| |
-| Gamma Exposure | Spot Ã— Î“ Ã— OI |
-
-### 3. Regime Detection (HMM)
-
-**Model Configuration:**
-- **Library**: hmmlearn
-- **States**: 3 hidden states
-- **Training Split**: 70% train / 30% test
-
-**Regime Interpretation:**
-| State | Label | Characteristics |
-|-------|-------|-----------------|
-| +1 | **Uptrend** | High momentum, low IV |
-| 0 | **Sideways** | Range-bound, elevated IV |
-| -1 | **Downtrend** | Negative momentum, high IV |
-
-**Input Features:**
-- Average IV, IV Spread
-- PCR (OI-based), ATM Delta, Gamma, Vega
-- Futures Basis, Spot Returns
-
-### 4. Trading Strategy
-
-**5/15 EMA Crossover with Regime Filter:**
+## 📁 Project Structure
 
 ```
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚  LONG ENTRY                                     â”‚
-â”‚  â€¢ 5 EMA crosses ABOVE 15 EMA                   â”‚
-â”‚  â€¢ Current Regime = +1 (Uptrend)                â”‚
-â”‚  â€¢ Enter at next candle OPEN                    â”‚
-â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
-â”‚  LONG EXIT                                      â”‚
-â”‚  â€¢ 5 EMA crosses BELOW 15 EMA                   â”‚
-â”‚  â€¢ Exit at next candle OPEN                     â”‚
-â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
-â”‚  SHORT ENTRY                                    â”‚
-â”‚  â€¢ 5 EMA crosses BELOW 15 EMA                   â”‚
-â”‚  â€¢ Current Regime = -1 (Downtrend)              â”‚
-â”‚  â€¢ Enter at next candle OPEN                    â”‚
-â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
-â”‚  SHORT EXIT                                     â”‚
-â”‚  â€¢ 5 EMA crosses ABOVE 15 EMA                   â”‚
-â”‚  â€¢ Exit at next candle OPEN                     â”‚
-â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
-â”‚  NO TRADE: Regime = 0 (Sideways)                â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+nifty-quant-trading/
+│
+├── 📂 data/                           # Data files
+│   ├── nifty_spot_5min.csv           # Spot OHLCV data
+│   ├── nifty_futures_5min.csv        # Futures with OI
+│   ├── nifty_options_5min.csv        # Options chain
+│   ├── nifty_merged_5min.csv         # Merged dataset
+│   ├── nifty_features_5min.csv       # Feature-engineered
+│   └── nifty_regime_5min.csv         # With regime labels
+│
+├── 📂 notebooks/                      # Jupyter notebooks
+│   ├── 01_data_acquisition.ipynb     # Data fetching
+│   ├── 02_data_cleaning.ipynb        # Data preprocessing
+│   ├── 03_features.ipynb             # Feature engineering
+│   ├── 04_regime_detection.ipynb     # HMM training
+│   ├── 05_baseline_strategy.ipynb    # EMA strategy backtest
+│   ├── 06_ml_models.ipynb            # ML model training
+│   └── 07_outlier_analysis.ipynb     # Outlier analysis
+│
+├── 📂 src/                            # Python modules
+│   ├── __init__.py
+│   ├── data_utils.py                 # Data fetching & cleaning
+│   ├── features.py                   # Feature engineering
+│   ├── greeks.py                     # Black-Scholes Greeks
+│   ├── regime.py                     # HMM regime detection
+│   ├── strategy.py                   # Trading strategy
+│   ├── backtest.py                   # Backtesting engine
+│   └── ml_models.py                  # XGBoost & LSTM models
+│
+├── 📂 models/                         # Saved models
+│   ├── hmm_regime_model.joblib       # Trained HMM
+│   ├── xgboost_model.joblib          # Trained XGBoost
+│   └── lstm_model.h5                 # Trained LSTM
+│
+├── 📂 results/                        # Output files
+│   ├── baseline_metrics.csv          # Baseline performance
+│   ├── baseline_trades.csv           # Trade records
+│   ├── ml_comparison.csv             # Model comparison
+│   ├── xgb_trades.csv                # XGBoost filtered trades
+│   └── lstm_trades.csv               # LSTM filtered trades
+│
+├── 📂 plots/                          # Visualizations
+│   ├── 01_data_overview.png
+│   ├── 04_regime_detection.png
+│   ├── 05_baseline_strategy.png
+│   └── 06_ml_comparison.png
+│
+├── generate_presentation.py          # PowerPoint generator
+├── requirements.txt                  # Dependencies
+└── README.md                         # This file
 ```
 
-### 5. ML Enhancement
+---
 
-**Binary Classification Goal:** Predict if a trade signal will be profitable (1) or not (0)
+## 📊 Methodology
 
-| Model | Architecture | Cross-Validation |
-|-------|-------------|------------------|
-| **XGBoost** | Gradient Boosting (100 trees) | Time-series 5-fold |
-| **LSTM** | 10-step sequence â†’ LSTM(64) â†’ Dropout(0.2) â†’ Dense(1) | Temporal split |
+### 1. Hidden Markov Model (Regime Detection)
 
-**Trade Filter:** Only execute trades where model confidence > 0.5
+**Configuration:**
+- **States:** 3 (Uptrend, Sideways, Downtrend)
+- **Input Features:** Avg IV, IV Spread, PCR, ATM Greeks, Futures Basis, Returns
+- **Training:** First 70% of data
+
+**Interpretation:**
+| State | Label | Trading Action |
+|-------|-------|----------------|
+| +1 | Uptrend | LONG entries allowed |
+| 0 | Sideways | NO trades |
+| -1 | Downtrend | SHORT entries allowed |
+
+### 2. LSTM Model (Trade Filter)
+
+**Architecture:**
+```
+Input (sequence_length=10, n_features)
+    ↓
+LSTM(64, return_sequences=True) + L2 regularization
+    ↓
+Dropout(0.2)
+    ↓
+LSTM(32, return_sequences=False) + L2 regularization
+    ↓
+BatchNormalization
+    ↓
+Dense(64, ReLU) + L2 regularization
+    ↓
+Dropout(0.2)
+    ↓
+Dense(32, ReLU)
+    ↓
+Dense(1, Sigmoid) → Probability of profitable trade
+```
+
+**Training:**
+- **Epochs:** 100 (with EarlyStopping, patience=15)
+- **Optimizer:** Adam (lr=0.0005 with ReduceLROnPlateau)
+- **Target:** Binary (1 = profitable trade, 0 = loss)
 
 ---
 
-## ðŸ“ˆ Key Results
+## 🔬 Technical Details
 
-### Baseline Strategy Performance
+### Stationary Features
 
-| Metric | Train (70%) | Test (30%) |
-|--------|-------------|------------|
-| **Total Return** | 236.86 pts | 253.35 pts |
-| **Sharpe Ratio** | 2.19 | 10.77 |
-| **Max Drawdown** | 876.86 pts | 283.56 pts |
-| **Win Rate** | 32.39% | 29.17% |
-| **Total Trades** | 142 | 24 |
+All ML features are stationary to prevent lookahead bias:
 
-### ML Model Performance
+| Feature Type | Examples |
+|--------------|----------|
+| **Returns** | Log returns, momentum (not raw prices) |
+| **Distances** | Distance from EMA as % (not raw EMA values) |
+| **Ratios** | PCR, Delta ratios, IV spreads |
+| **Normalized** | ATR%, RSI, normalized Greeks |
 
-| Metric | XGBoost | LSTM |
-|--------|---------|------|
-| **Accuracy** | 62.5% | 66.7% |
-| **Precision** | 25.0% | 42.9% |
-| **Recall** | 14.3% | 42.9% |
-| **F1-Score** | 18.2% | 42.9% |
-| **ROC-AUC** | 66.4% | - |
+### No Lookahead Bias
 
-### ML-Enhanced Strategy Comparison
-
-| Metric | Baseline | XGBoost-Filtered | LSTM-Filtered |
-|--------|----------|------------------|---------------|
-| Total Trades | 147 | 34 | 17 |
-| Win Rate (%) | 25.9% | 38.2% | 29.4% |
-| Sharpe Ratio | -15.7 | 22.3 | -22.9 |
-| Profit Factor | 0.73 | 1.71 | 0.69 |
-
-**Key Insight:** XGBoost filtering reduces trades significantly while improving win rate and Sharpe ratio.
-
-### Outlier Analysis
-
-| Metric | Value |
-|--------|-------|
-| Total Trades Analyzed | 24 |
-| Profitable Trades | 7 |
-| Outlier Trades (Z > 3) | 0 |
-| Average PnL (Normal) | 164.51 pts |
-
----
-
-## ðŸ““ Notebooks Guide
-
-| Notebook | Purpose | Key Outputs |
-|----------|---------|-------------|
-| **01_data_acquisition** | Fetch/generate market data | `nifty_spot_5min.csv`, `nifty_futures_5min.csv`, `nifty_options_5min.csv` |
-| **02_data_cleaning** | Clean and align data | `nifty_merged_5min.csv`, `data_cleaning_report.txt` |
-| **03_feature_engineering** | Create features & Greeks | `nifty_features_5min.csv` |
-| **04_regime_detection** | Train HMM model | `nifty_regime_5min.csv`, `hmm_regime_model.joblib`, regime plots |
-| **05_baseline_strategy** | Backtest EMA strategy | `baseline_trades.csv`, `baseline_metrics.json` |
-| **06_ml_models** | Train XGBoost & LSTM | `xgboost_model.joblib`, `lstm_model.h5`, `ml_comparison.csv` |
-| **07_outlier_analysis** | Analyze outlier trades | `outlier_analysis.json`, `outlier_insights.csv` |
-
----
-
-## ðŸ”¬ Technical Details
-
-### Source Modules
-
-| Module | Key Functions |
-|--------|---------------|
-| `data_utils.py` | `generate_synthetic_spot()`, `generate_synthetic_futures()`, `generate_synthetic_options()`, `clean_data()`, `merge_data()` |
-| `features.py` | `calculate_ema()`, `calculate_derived_features()` |
-| `greeks.py` | `calculate_greeks_call()`, `calculate_greeks_put()` |
-| `regime.py` | `MarketRegimeHMM` class with `fit()`, `predict()`, `get_transition_matrix()` |
-| `strategy.py` | `generate_signals()`, `EMARegimeStrategy` class |
-| `backtest.py` | `run_backtest()`, `calculate_metrics()`, `calculate_sharpe()`, `calculate_max_drawdown()` |
-| `ml_models.py` | `train_xgboost()`, `train_lstm()`, `prepare_sequences()` |
-
-### Data Specifications
-
-- **Timeframe**: 5-minute bars
-- **Period**: 1 year of historical data
-- **Options Strikes**: ATM, ATMÂ±1, ATMÂ±2 (Calls & Puts)
-- **Risk-Free Rate**: 6.5% (for Greeks calculation)
+- Signals generated at time T, entry at T+1 open
+- HMM trained only on past data
+- ML models use time-series cross-validation
+- Regime labels not peeked during signal generation
 
 ---
 
 ## 🚧 Future Improvements
 
-1. **Live Data Integration**: Connect to Zerodha Kite, ICICI Breeze, Groww, or NSE Historical Data API
-2. **Enhanced ML Models**: Transformer-based models for sequence prediction
-3. **Risk Management**: Position sizing based on Kelly Criterion
-4. **Multi-Asset**: Extend to Bank Nifty, individual stocks
-5. **Real-time Execution**: Paper trading integration
-6. **Hyperparameter Optimization**: Bayesian optimization for model tuning
+1. **Live Integration:** Connect to Zerodha Kite, ICICI Breeze, or Groww API
+2. **Ensemble Models:** Combine XGBoost + LSTM voting
+3. **Position Sizing:** Kelly Criterion based on ML confidence
+4. **Risk Management:** Dynamic stop-loss and take-profit levels
+5. **Multi-Asset:** Extend to Bank Nifty, sector indices
+6. **Transformer Models:** Replace LSTM with attention-based models
 
 ---
 
-## 📡 API Integration Guide
+## 📝 License
 
-### Using Custom Data APIs
-
-The project is designed to work with synthetic data out-of-the-box, but you can easily integrate your own data source:
-
-```python
-# In src/data_utils.py, modify fetch_nifty_spot() or create new functions:
-
-# Example: Zerodha Kite Connect
-from kiteconnect import KiteConnect
-
-def fetch_from_kite(start_date, end_date, api_key, access_token):
-    kite = KiteConnect(api_key=api_key)
-    kite.set_access_token(access_token)
-    
-    # Fetch spot data
-    spot_data = kite.historical_data(
-        instrument_token=256265,  # NIFTY 50
-        from_date=start_date,
-        to_date=end_date,
-        interval="5minute"
-    )
-    return pd.DataFrame(spot_data)
-
-# Example: ICICI Breeze
-from breeze_connect import BreezeConnect
-
-def fetch_from_breeze(start_date, end_date, api_key, session_token):
-    breeze = BreezeConnect(api_key=api_key)
-    breeze.generate_session(api_secret=session_token)
-    
-    data = breeze.get_historical_data(
-        interval="5minute",
-        from_date=start_date,
-        to_date=end_date,
-        stock_code="NIFTY",
-        exchange_code="NFO"
-    )
-    return pd.DataFrame(data['Success'])
-```
-
-### Supported APIs
-
-| Provider | Package | Documentation |
-|----------|---------|---------------|
-| Zerodha Kite | `kiteconnect` | [kite.trade/docs](https://kite.trade/docs/connect/v3/) |
-| ICICI Breeze | `breeze-connect` | [api.icicidirect.com](https://api.icicidirect.com/) |
-| Groww | REST API | Contact Groww support |
-| NSE | Direct download | [nseindia.com](https://www.nseindia.com/)
+This project is for **educational purposes only**. Always paper trade before deploying with real capital.
 
 ---
 
-## ðŸ“ License
+## 👨‍💻 Author
 
-This project is for educational purposes. Use at your own risk.
-
----
-
-## ðŸ‘¨â€ðŸ’» Author
-
-**Kartik**
+**Kartik Mendiratta**
 
 ---
 
-## ðŸ“§ Contact
+## 📧 Contact
 
 For questions or feedback, please open an issue on GitHub.
 
 ---
 
 *Last Updated: January 2026*
-

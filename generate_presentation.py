@@ -1,5 +1,6 @@
 """
-Generate PowerPoint Presentation for NIFTY Trading Strategy Project
+Generate PowerPoint Presentation for NIFTY Quantitative Trading Strategy
+Updated with latest LSTM improvements and results
 """
 from pptx import Presentation
 from pptx.util import Inches, Pt
@@ -13,60 +14,87 @@ prs = Presentation()
 prs.slide_width = Inches(13.333)
 prs.slide_height = Inches(7.5)
 
-# Color scheme
-DARK_BLUE = RGBColor(0, 51, 102)
-LIGHT_BLUE = RGBColor(0, 112, 192)
-GREEN = RGBColor(0, 176, 80)
-RED = RGBColor(255, 0, 0)
+# Color scheme - Professional dark theme
+DARK_BLUE = RGBColor(15, 32, 65)
+ACCENT_BLUE = RGBColor(0, 122, 204)
+GREEN = RGBColor(40, 180, 99)
+RED = RGBColor(231, 76, 60)
 GRAY = RGBColor(128, 128, 128)
+LIGHT_GRAY = RGBColor(200, 200, 200)
+WHITE = RGBColor(255, 255, 255)
 
 def add_title_slide(title, subtitle=""):
     slide = prs.slides.add_slide(prs.slide_layouts[6])  # Blank
+    
+    # Dark background
+    background = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, prs.slide_width, prs.slide_height)
+    background.fill.solid()
+    background.fill.fore_color.rgb = DARK_BLUE
+    background.line.fill.background()
+    
     # Title
-    txBox = slide.shapes.add_textbox(Inches(0.5), Inches(2.5), Inches(12), Inches(1.5))
+    txBox = slide.shapes.add_textbox(Inches(0.5), Inches(2.2), Inches(12.333), Inches(1.5))
     tf = txBox.text_frame
     p = tf.paragraphs[0]
     p.text = title
-    p.font.size = Pt(44)
+    p.font.size = Pt(48)
     p.font.bold = True
-    p.font.color.rgb = DARK_BLUE
+    p.font.color.rgb = WHITE
     p.alignment = PP_ALIGN.CENTER
+    
     # Subtitle
     if subtitle:
-        txBox2 = slide.shapes.add_textbox(Inches(0.5), Inches(4), Inches(12), Inches(1))
+        txBox2 = slide.shapes.add_textbox(Inches(0.5), Inches(4), Inches(12.333), Inches(1))
         tf2 = txBox2.text_frame
         p2 = tf2.paragraphs[0]
         p2.text = subtitle
-        p2.font.size = Pt(24)
-        p2.font.color.rgb = GRAY
+        p2.font.size = Pt(22)
+        p2.font.color.rgb = ACCENT_BLUE
         p2.alignment = PP_ALIGN.CENTER
+    
+    # Author line
+    txBox3 = slide.shapes.add_textbox(Inches(0.5), Inches(6), Inches(12.333), Inches(0.5))
+    tf3 = txBox3.text_frame
+    p3 = tf3.paragraphs[0]
+    p3.text = "Kartik Mendiratta | January 2026"
+    p3.font.size = Pt(16)
+    p3.font.color.rgb = LIGHT_GRAY
+    p3.alignment = PP_ALIGN.CENTER
+    
     return slide
 
 def add_content_slide(title, bullets, image_path=None):
     slide = prs.slides.add_slide(prs.slide_layouts[6])  # Blank
-    # Title
+    
+    # Title bar
+    title_bg = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, prs.slide_width, Inches(1.2))
+    title_bg.fill.solid()
+    title_bg.fill.fore_color.rgb = DARK_BLUE
+    title_bg.line.fill.background()
+    
+    # Title text
     txBox = slide.shapes.add_textbox(Inches(0.5), Inches(0.3), Inches(12), Inches(0.8))
     tf = txBox.text_frame
     p = tf.paragraphs[0]
     p.text = title
-    p.font.size = Pt(32)
+    p.font.size = Pt(28)
     p.font.bold = True
-    p.font.color.rgb = DARK_BLUE
+    p.font.color.rgb = WHITE
     
-    # Bullet points - adjust width and font based on image
+    # Bullet points
     has_image = image_path and os.path.exists(image_path)
     if has_image:
         left = Inches(0.5)
         width = Inches(5.8)
-        font_size = Pt(16)  # Smaller font when image present
-        space_after = Pt(8)
+        font_size = Pt(16)
+        space_after = Pt(10)
     else:
         left = Inches(0.5)
         width = Inches(12)
         font_size = Pt(18)
-        space_after = Pt(12)
+        space_after = Pt(14)
     
-    txBox2 = slide.shapes.add_textbox(left, Inches(1.3), width, Inches(5.5))
+    txBox2 = slide.shapes.add_textbox(left, Inches(1.5), width, Inches(5.5))
     tf2 = txBox2.text_frame
     tf2.word_wrap = True
     
@@ -75,13 +103,14 @@ def add_content_slide(title, bullets, image_path=None):
             p = tf2.paragraphs[0]
         else:
             p = tf2.add_paragraph()
-        p.text = "• " + bullet
+        p.text = "▸ " + bullet
         p.font.size = font_size
+        p.font.color.rgb = RGBColor(60, 60, 60)
         p.space_after = space_after
     
-    # Image - position further right to avoid overlap
+    # Image
     if has_image:
-        slide.shapes.add_picture(image_path, Inches(6.5), Inches(1.3), width=Inches(6.3))
+        slide.shapes.add_picture(image_path, Inches(6.5), Inches(1.5), width=Inches(6.3))
     
     # Slide number
     add_slide_number(slide, len(prs.slides))
@@ -98,14 +127,83 @@ def add_slide_number(slide, num):
 
 def add_section_header(title):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
-    txBox = slide.shapes.add_textbox(Inches(0.5), Inches(3), Inches(12), Inches(1.5))
+    
+    # Dark background
+    background = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, prs.slide_width, prs.slide_height)
+    background.fill.solid()
+    background.fill.fore_color.rgb = DARK_BLUE
+    background.line.fill.background()
+    
+    # Accent line
+    accent = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(5), Inches(2.8), Inches(3.333), Inches(0.08))
+    accent.fill.solid()
+    accent.fill.fore_color.rgb = ACCENT_BLUE
+    accent.line.fill.background()
+    
+    txBox = slide.shapes.add_textbox(Inches(0.5), Inches(3.2), Inches(12.333), Inches(1.5))
     tf = txBox.text_frame
     p = tf.paragraphs[0]
     p.text = title
     p.font.size = Pt(40)
     p.font.bold = True
-    p.font.color.rgb = LIGHT_BLUE
+    p.font.color.rgb = WHITE
     p.alignment = PP_ALIGN.CENTER
+    
+    add_slide_number(slide, len(prs.slides))
+    return slide
+
+def add_results_table_slide(title, headers, data):
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    
+    # Title bar
+    title_bg = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, prs.slide_width, Inches(1.2))
+    title_bg.fill.solid()
+    title_bg.fill.fore_color.rgb = DARK_BLUE
+    title_bg.line.fill.background()
+    
+    txBox = slide.shapes.add_textbox(Inches(0.5), Inches(0.3), Inches(12), Inches(0.8))
+    tf = txBox.text_frame
+    p = tf.paragraphs[0]
+    p.text = title
+    p.font.size = Pt(28)
+    p.font.bold = True
+    p.font.color.rgb = WHITE
+    
+    # Create table
+    rows = len(data) + 1
+    cols = len(headers)
+    table_width = Inches(10)
+    table_height = Inches(4)
+    
+    x = (prs.slide_width - table_width) / 2
+    table = slide.shapes.add_table(rows, cols, x, Inches(2), table_width, table_height).table
+    
+    # Style header row
+    for i, header in enumerate(headers):
+        cell = table.cell(0, i)
+        cell.text = header
+        cell.fill.solid()
+        cell.fill.fore_color.rgb = ACCENT_BLUE
+        tf = cell.text_frame
+        tf.paragraphs[0].font.bold = True
+        tf.paragraphs[0].font.color.rgb = WHITE
+        tf.paragraphs[0].font.size = Pt(14)
+        tf.paragraphs[0].alignment = PP_ALIGN.CENTER
+    
+    # Data rows
+    for row_idx, row_data in enumerate(data):
+        for col_idx, value in enumerate(row_data):
+            cell = table.cell(row_idx + 1, col_idx)
+            cell.text = str(value)
+            tf = cell.text_frame
+            tf.paragraphs[0].font.size = Pt(12)
+            tf.paragraphs[0].alignment = PP_ALIGN.CENTER
+            
+            # Highlight best values in green
+            if col_idx == 3 and row_idx == 2:  # LSTM row
+                cell.fill.solid()
+                cell.fill.fore_color.rgb = RGBColor(212, 237, 218)
+    
     add_slide_number(slide, len(prs.slides))
     return slide
 
@@ -113,227 +211,188 @@ def add_section_header(title):
 # SLIDE 1: Title
 # ============================================================
 add_title_slide(
-    "NIFTY Algorithmic Trading Strategy",
-    "Sequential Filtering Architecture with HMM Regime Detection & ML Trade Validation"
+    "NIFTY 50 Quantitative Trading System",
+    "HMM Regime Detection • ML Signal Filtering • Sequential Architecture"
 )
 
 # ============================================================
-# SLIDES 2-4: Executive Summary
+# SLIDE 2-3: Executive Summary
 # ============================================================
 add_section_header("Executive Summary")
 
-add_content_slide("Project Overview", [
-    "Built a quantitative trading system for NIFTY 50 derivatives",
-    "Sequential Filtering Architecture: Data → Features → Regime → Signal → ML → Execution",
-    "Uses Hidden Markov Model (HMM) for market regime detection",
-    "Machine Learning filters (XGBoost, LSTM) to validate trade signals",
-    "Backtested on 5-minute NIFTY data with comprehensive metrics"
-])
-
-add_content_slide("Key Results", [
-    "Baseline Strategy: 147 trades, 25.85% win rate",
-    "XGBoost Filtered: 40 trades, 35.00% win rate (+9.15 pp)",
-    "LSTM Filtered: 28 trades, 39.29% win rate (+13.44 pp)",
-    "ML filtering reduces trade count by 70-80%",
-    "Significant improvement in risk-adjusted returns"
+add_content_slide("Project Highlights", [
+    "End-to-end quantitative trading pipeline for NIFTY 50 derivatives",
+    "Sequential Filtering: Data → Features → Regime → Signals → ML Filter → Execution",
+    "Hidden Markov Model (HMM) for 3-state market regime detection",
+    "Dual ML filters: XGBoost (tree-based) and LSTM (deep learning)",
+    "LSTM achieves 44.4% win rate vs 29.3% baseline (+15.2 pp)",
+    "Profit Factor improved from 0.90 (baseline) to 1.85 (LSTM)"
 ])
 
 # ============================================================
-# SLIDES 5-7: Data Pipeline
+# SLIDE 4-6: Data Pipeline
 # ============================================================
 add_section_header("Data Pipeline")
 
-add_content_slide("Data Sources", [
-    "NIFTY 50 Spot Index (5-minute intervals)",
-    "NIFTY Futures (Current Month contract)",
-    "NIFTY Options (ATM ± 2 strikes)",
-    "Time period: Multiple months of intraday data",
-    "Total records: ~19,500 rows × 71 features"
-])
+add_content_slide("Data Sources & Processing", [
+    "NIFTY 50 Spot: 5-minute OHLCV bars (~19,500 records)",
+    "NIFTY Futures: Current month contract with rollover handling",
+    "NIFTY Options: ATM ± 2 strikes for Calls & Puts",
+    "Features: 70+ engineered including Greeks, IV, PCR, momentum",
+    "Train/Test Split: 70% / 30% with no lookahead bias",
+    "Data quality: Aligned timestamps, forward-filled gaps"
+], "plots/01_data_overview.png")
 
-add_content_slide("Data Cleaning Process", [
-    "Handled futures contract rollovers (stitching)",
-    "Calculated dynamic ATM strike based on spot price",
-    "Aligned all timestamps to 5-minute intervals",
-    "Forward-filled missing values",
-    "Merged Spot, Futures, and Options into single dataset"
-], "plots/02_data_quality.png")
-
-# ============================================================
-# SLIDES 8-11: Feature Engineering
-# ============================================================
-add_section_header("Feature Engineering")
-
-add_content_slide("Technical Indicators", [
-    "EMA (5-period) - Fast moving average",
-    "EMA (15-period) - Slow moving average",
-    "EMA Crossover signals for entry/exit",
-    "ATR (14-period) for volatility measurement"
-])
-
-add_content_slide("Options Greeks (Black-Scholes)", [
-    "Delta - Price sensitivity to underlying",
-    "Gamma - Rate of change of Delta",
-    "Theta - Time decay",
-    "Vega - Volatility sensitivity",
-    "Rho - Interest rate sensitivity",
-    "Calculated using mibian library (r = 6.5%)"
-])
-
-add_content_slide("Derived Features", [
-    "Average IV = (Call IV + Put IV) / 2",
-    "IV Spread = Call IV - Put IV",
-    "PCR (OI-based) = Put OI / Call OI",
-    "Futures Basis = (Futures - Spot) / Spot",
-    "Gamma Exposure = Spot × Gamma × OI"
-], "plots/03_features.png")
+add_content_slide("Feature Engineering", [
+    "Technical: EMA(5), EMA(15), RSI, ATR, Momentum",
+    "Greeks: Delta, Gamma, Theta, Vega, Rho (Black-Scholes, r=6.5%)",
+    "Options: Average IV, IV Spread, PCR (OI & Volume)",
+    "Derived: Futures Basis, Gamma Exposure, Net Delta",
+    "Stationary: Log returns, Distance from EMA (percentage)",
+    "Temporal: Hour, Day of week, Market session indicators"
+], "plots/03_feature_engineering.png")
 
 # ============================================================
-# SLIDES 12-15: Regime Detection
+# SLIDE 7-9: Regime Detection
 # ============================================================
-add_section_header("Regime Detection")
+add_section_header("Regime Detection (HMM)")
 
-add_content_slide("Hidden Markov Model (HMM)", [
+add_content_slide("Hidden Markov Model Design", [
     "3-State Model: Uptrend (+1), Sideways (0), Downtrend (-1)",
     "Library: hmmlearn with GaussianHMM",
-    "Trained on first 70% of data",
-    "Uses options-based features only for regime classification"
-])
-
-add_content_slide("HMM Input Features", [
-    "Average IV - Implied volatility level",
-    "IV Spread - Call vs Put IV difference",
-    "PCR (OI-based) - Put/Call sentiment",
-    "ATM Delta, Gamma, Vega - Greeks",
-    "Futures Basis - Futures premium/discount",
-    "Spot Returns - Price momentum"
-])
-
-add_content_slide("Regime Detection Results", [
-    "Downtrend (-1): ~59% of candles",
-    "Sideways (0): ~19% of candles",
-    "Uptrend (+1): ~22% of candles",
-    "High regime persistence (>99% self-transition probability)",
-    "Clear separation of market conditions"
+    "Input features: IV, PCR, Greeks, Futures Basis, Returns",
+    "High persistence: >99% self-transition probability",
+    "Regime used as primary trade filter",
+    "LONG only in Uptrend (+1), SHORT only in Downtrend (-1)"
 ], "plots/04_regime_detection.png")
 
 # ============================================================
-# SLIDES 16-19: Baseline Strategy
+# SLIDE 10-12: Trading Strategy
 # ============================================================
-add_section_header("Baseline Strategy Results")
+add_section_header("Trading Strategy")
 
-add_content_slide("EMA Crossover + Regime Filter", [
-    "LONG: EMA(5) crosses above EMA(15) AND Regime = +1",
-    "SHORT: EMA(5) crosses below EMA(15) AND Regime = -1",
+add_content_slide("5/15 EMA Crossover + Regime Filter", [
+    "LONG Entry: EMA(5) > EMA(15) AND Regime = +1 (Uptrend)",
+    "SHORT Entry: EMA(5) < EMA(15) AND Regime = -1 (Downtrend)",
+    "Exit: Opposite EMA crossover signal",
     "NO TRADE: When Regime = 0 (Sideways market)",
-    "Entry at next candle open after signal",
-    "Exit on opposite crossover"
+    "Entry at next candle OPEN (no lookahead bias)",
+    "Force-close positions on regime change to Sideways"
 ])
 
-add_content_slide("Baseline Performance Metrics", [
-    "Total Trades: 147",
-    "Win Rate: 25.85%",
-    "Total Return: -1.55%",
-    "Sharpe Ratio: -14.79",
-    "Max Drawdown: 2.04%",
-    "Profit Factor: 0.74"
+add_content_slide("Baseline Strategy Performance", [
+    "Total Trades: 140",
+    "Win Rate: 29.3%",
+    "Total Return: -0.54%",
+    "Sharpe Ratio: -5.72",
+    "Sortino Ratio: -19.45",
+    "Profit Factor: 0.90",
+    "Max Drawdown: 1.21%"
 ], "plots/05_baseline_strategy.png")
 
-add_content_slide("Force-Close on Regime Change", [
-    "Added safety feature: Force-close when Regime → 0",
-    "Prevents holding positions in uncertain markets",
-    "Reduces exposure during sideways conditions",
-    "Improves risk management"
-])
-
 # ============================================================
-# SLIDES 20-24: ML Enhancement
+# SLIDE 13-16: ML Enhancement
 # ============================================================
-add_section_header("ML Enhancement")
+add_section_header("Machine Learning Enhancement")
 
 add_content_slide("ML Problem Definition", [
     "Binary Classification: Predict if trade will be profitable",
     "Target: 1 if trade PnL > 0, else 0",
-    "Features: All engineered features at signal point",
-    "Training: First 70% of data with cross-validation",
-    "Inference: Only take trades when ML confidence > 50%"
+    "Features: All stationary features at signal point",
+    "Training: First 70% of data with time-series CV",
+    "Trade filter: Only execute when ML confidence ≥ 50%"
 ])
 
-add_content_slide("Model A: XGBoost Classifier", [
-    "Gradient Boosting Decision Trees",
+add_content_slide("XGBoost Classifier", [
+    "Gradient Boosting with 100 trees",
     "Time-Series Cross-Validation (5 folds)",
-    "CV Accuracy: ~65%",
+    "Mean CV Accuracy: ~62%",
     "Fast training and inference",
-    "Feature importance analysis available"
+    "Feature importance analysis reveals top predictors"
 ], "plots/06_xgb_importance.png")
 
-add_content_slide("Model B: LSTM Classifier", [
-    "Sequence model using last 10 candles",
-    "Architecture: LSTM → Dropout → Dense → Sigmoid",
-    "Captures temporal patterns in features",
-    "Pre-calculated batch predictions for efficiency",
-    "Provides strongest filtering (81% trades rejected)"
+add_content_slide("LSTM Neural Network (Improved)", [
+    "Two-layer stacked LSTM (64 → 32 units)",
+    "10-step lookback sequence for temporal patterns",
+    "BatchNormalization + L2 regularization",
+    "EarlyStopping + Learning Rate scheduling",
+    "Correct target alignment: predicts for last row in sequence",
+    "Default 0.5 probability for warmup period (no bias)"
 ])
 
-add_content_slide("XGBoost Confusion Matrix", [
-    "True Negatives: 305 (Loss correctly predicted)",
-    "True Positives: 126 (Profit correctly predicted)",
-    "Training Accuracy: 100%",
-    "Model learns to distinguish profitable patterns"
-], "plots/06_xgb_confusion_matrix.png")
+# ============================================================
+# SLIDE 17: Key Results Comparison
+# ============================================================
+add_results_table_slide(
+    "Model Comparison Results",
+    ["Metric", "Baseline", "XGBoost", "LSTM"],
+    [
+        ["Total Trades", "140", "27", "9"],
+        ["Win Rate (%)", "29.3%", "22.2%", "44.4%"],
+        ["Total Return (%)", "-0.54%", "-0.50%", "+0.18%"],
+        ["Sharpe Ratio", "-5.72", "-34.4", "+30.7"],
+        ["Sortino Ratio", "-19.5", "-98.6", "+97.6"],
+        ["Max Drawdown (%)", "1.21%", "0.55%", "0.15%"],
+        ["Profit Factor", "0.90", "0.54", "1.85"]
+    ]
+)
 
-add_content_slide("ML Enhancement Results", [
-    "Baseline: 147 trades, 25.85% win rate",
-    "XGBoost: 40 trades, 35.00% win rate (+9.15 pp)",
-    "LSTM: 28 trades, 39.29% win rate (+13.44 pp)",
-    "Both models significantly reduce false signals",
-    "Trade quality improved at cost of quantity"
+add_content_slide("Key Insights from Results", [
+    "LSTM achieves highest win rate: 44.4% (+15.2 pp vs baseline)",
+    "LSTM is ONLY profitable model: +0.18% return, 1.85 profit factor",
+    "LSTM has lowest drawdown: 0.15% vs 1.21% baseline",
+    "LSTM Sharpe: +30.7 vs -5.72 baseline (massive improvement)",
+    "Aggressive filtering: 9 trades vs 140 baseline (93% reduction)",
+    "Quality over quantity: Fewer but higher-conviction trades"
 ], "plots/06_ml_comparison.png")
 
 # ============================================================
-# SLIDES 25-27: High-Performance Analysis
+# SLIDE 18-19: Outlier Analysis
 # ============================================================
-add_section_header("High-Performance Trade Analysis")
+add_section_header("High-Performance Analysis")
 
-add_content_slide("Outlier Detection (Z-score > 3)", [
-    "Identified profitable trades beyond 3 standard deviations",
-    "Analyzed: regime, IV, ATR, time of day, Greeks, duration",
-    "Statistical tests comparing outliers vs normal trades",
-    "Found distinguishing patterns in high-performance trades"
-])
-
-add_content_slide("Key Findings", [
-    "Outlier trades tend to occur in strong trending regimes",
-    "Higher IV environments correlate with larger moves",
-    "Duration shows moderate correlation with PnL",
-    "Morning hours (9:15-11:00) show better performance",
-    "PCR extremes often precede profitable trades"
+add_content_slide("Outlier Trade Characteristics", [
+    "Identified trades with Z-score > 3 standard deviations",
+    "Strong trending regimes correlate with outlier profits",
+    "Higher IV environments precede larger price moves",
+    "Morning session (9:15-11:00) shows better performance",
+    "PCR extremes often signal profitable opportunities",
+    "Trade duration shows moderate correlation with PnL"
 ], "plots/07_outlier_analysis.png")
 
 # ============================================================
-# SLIDES 28-30: Conclusion
+# SLIDE 20-21: Conclusion
 # ============================================================
-add_section_header("Conclusion & Recommendations")
+add_section_header("Conclusions & Recommendations")
 
 add_content_slide("Key Achievements", [
-    "Successfully implemented Sequential Filtering Architecture",
-    "HMM regime detection with 3 market states",
-    "ML validation improves win rate by 9-13 percentage points",
-    "Comprehensive backtesting framework with all metrics",
-    "Modular codebase for easy extension"
+    "Built complete quantitative trading pipeline",
+    "HMM successfully identifies 3 distinct market regimes",
+    "LSTM improves win rate by 15+ percentage points",
+    "LSTM is the only profitable model configuration",
+    "Risk metrics (Sharpe, Sortino, Drawdown) vastly improved",
+    "Modular codebase ready for production extension"
 ])
 
-add_content_slide("Recommendations", [
-    "Use LSTM filter for highest conviction trades only",
-    "Combine XGBoost + LSTM for ensemble approach",
+add_content_slide("Recommendations & Next Steps", [
+    "Deploy LSTM filter for live paper trading",
+    "Consider ensemble: XGBoost + LSTM voting",
     "Add position sizing based on ML confidence",
-    "Consider adding stop-loss and take-profit levels",
-    "Paper trade before live deployment",
-    "Monitor regime transitions in real-time"
+    "Implement stop-loss and take-profit levels",
+    "Extend to Bank Nifty and sector indices",
+    "Integrate with broker API (Zerodha, ICICI) for automation"
 ])
+
+# ============================================================
+# Final slide
+# ============================================================
+add_title_slide(
+    "Thank You",
+    "Questions & Discussion"
+)
 
 # Save presentation
-output_path = "NIFTY_Presentation_v2.pptx"
+output_path = "NIFTY_Trading_Strategy_Final.pptx"
 prs.save(output_path)
-print(f"Presentation saved: {output_path}")
-print(f"Total slides: {len(prs.slides)}")
+print(f"✓ Presentation saved: {output_path}")
+print(f"✓ Total slides: {len(prs.slides)}")

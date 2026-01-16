@@ -1,20 +1,20 @@
 DATA CLEANING REPORT
 ====================
-Generated: 2026-01-16 23:10:24
+Generated: 2026-01-17 00:17:34
 
 1. SPOT DATA
-   - Original rows: 19650
-   - After removing NaN: 19650
-   - After outlier removal: 19490
+   - Original rows: 19575
+   - After removing NaN: 19575
+   - After outlier removal: 19415
 
 2. FUTURES DATA
-   - Original rows: 19490
-   - Final rows: 19490
+   - Original rows: 19415
+   - Final rows: 19415
    - Handled monthly contract rollovers
 
 3. OPTIONS DATA
-   - Original rows: 97450
-   - Final rows: 97450
+   - Original rows: 97075
+   - Final rows: 97075
    - Removed invalid IV values
 
 4. DATA QUALITY CHECKS

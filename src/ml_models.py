@@ -105,55 +105,89 @@ class LSTMModel(TradeProfitabilityModel):
         self.lstm_units = lstm_units
         self.dropout = dropout
         self.model = None
+        self._training_indices = None  # Track which indices were used for training
         
     def _build_model(self, n_features: int):
         try:
             from tensorflow.keras.models import Sequential
-            from tensorflow.keras.layers import LSTM, Dense, Dropout, Input
+            from tensorflow.keras.layers import LSTM, Dense, Dropout, Input, BatchNormalization
             from tensorflow.keras.optimizers import Adam
+            from tensorflow.keras.regularizers import l2
         except ImportError:
             from keras.models import Sequential
-            from keras.layers import LSTM, Dense, Dropout, Input
+            from keras.layers import LSTM, Dense, Dropout, Input, BatchNormalization
             from keras.optimizers import Adam
+            from keras.regularizers import l2
         
+        # Improved architecture with better capacity and regularization
         model = Sequential([
             Input(shape=(self.sequence_length, n_features)),
-            LSTM(self.lstm_units, return_sequences=False),
+            LSTM(self.lstm_units, return_sequences=True, kernel_regularizer=l2(0.001)),
+            Dropout(self.dropout),
+            LSTM(self.lstm_units // 2, return_sequences=False, kernel_regularizer=l2(0.001)),
+            BatchNormalization(),
+            Dense(64, activation='relu', kernel_regularizer=l2(0.001)),
             Dropout(self.dropout),
             Dense(32, activation='relu'),
-            Dropout(self.dropout),
             Dense(1, activation='sigmoid')
         ])
-        model.compile(optimizer=Adam(learning_rate=0.001), loss='binary_crossentropy', metrics=['accuracy'])
+        model.compile(
+            optimizer=Adam(learning_rate=0.0005),
+            loss='binary_crossentropy',
+            metrics=['accuracy']
+        )
         return model
     
-    def _create_sequences(self, X: np.ndarray, y: np.ndarray = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    def _create_sequences(self, X: np.ndarray, y: np.ndarray = None) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]:
+        """Create sequences for LSTM.
+        
+        Each sequence uses rows [i:i+sequence_length] to predict the target at row i+sequence_length-1.
+        This means the target corresponds to the LAST row in the sequence, not one step ahead.
+        """
         sequences = []
         targets = []
+        indices = []  # Track which original indices these sequences correspond to
         
-        for i in range(len(X) - self.sequence_length):
+        for i in range(len(X) - self.sequence_length + 1):
             sequences.append(X[i:i + self.sequence_length])
+            indices.append(i + self.sequence_length - 1)  # The index of the prediction target
             if y is not None:
-                targets.append(y[i + self.sequence_length])
+                # Target is at the END of the sequence (last row used)
+                targets.append(y[i + self.sequence_length - 1])
         
         if y is not None:
-            return np.array(sequences), np.array(targets)
-        return np.array(sequences), None
+            return np.array(sequences), np.array(targets), np.array(indices)
+        return np.array(sequences), None, np.array(indices)
     
-    def fit(self, X: pd.DataFrame, y: pd.Series, epochs: int = 50, batch_size: int = 32, validation_split: float = 0.2) -> dict:
+    def fit(self, X: pd.DataFrame, y: pd.Series, epochs: int = 100, batch_size: int = 32, validation_split: float = 0.2) -> dict:
+        try:
+            from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
+        except ImportError:
+            from keras.callbacks import EarlyStopping, ReduceLROnPlateau
+        
         self.feature_columns = X.columns.tolist()
         X_scaled = self.scaler.fit_transform(X)
         
-        X_seq, y_seq = self._create_sequences(X_scaled, y.values)
+        X_seq, y_seq, self._training_indices = self._create_sequences(X_scaled, y.values)
+        
+        if len(X_seq) == 0:
+            raise ValueError(f"Not enough data to create sequences. Need at least {self.sequence_length} rows.")
         
         self.model = self._build_model(X.shape[1])
+        
+        # Add callbacks for better training
+        callbacks = [
+            EarlyStopping(patience=15, restore_best_weights=True, monitor='val_loss'),
+            ReduceLROnPlateau(factor=0.5, patience=5, min_lr=1e-6)
+        ]
         
         history = self.model.fit(
             X_seq, y_seq,
             epochs=epochs,
             batch_size=batch_size,
             validation_split=validation_split,
-            verbose=0
+            verbose=0,
+            callbacks=callbacks
         )
         
         self.is_fitted = True
@@ -161,36 +195,50 @@ class LSTMModel(TradeProfitabilityModel):
         return {
             'final_loss': history.history['loss'][-1],
             'final_accuracy': history.history['accuracy'][-1],
-            'val_accuracy': history.history.get('val_accuracy', [0])[-1]
+            'val_accuracy': history.history.get('val_accuracy', [0])[-1],
+            'epochs_trained': len(history.history['loss'])
         }
     
     def predict(self, X: pd.DataFrame) -> np.ndarray:
         X_scaled = self.scaler.transform(X[self.feature_columns])
-        X_seq, _ = self._create_sequences(X_scaled)
+        X_seq, _, indices = self._create_sequences(X_scaled)
         
         if len(X_seq) == 0:
-            return np.array([])
+            # Not enough data - return 0.5 (neutral) for all
+            return np.full(len(X), 0)
         
         proba = self.model.predict(X_seq, verbose=0)
         predictions = (proba > 0.5).astype(int).flatten()
         
+        # Create full predictions array, default to 0 (not profitable)
         full_predictions = np.zeros(len(X))
-        full_predictions[self.sequence_length:] = predictions
+        # Map predictions to their correct indices
+        for i, idx in enumerate(indices):
+            if idx < len(full_predictions):
+                full_predictions[idx] = predictions[i]
+        
         return full_predictions
     
     def predict_proba(self, X: pd.DataFrame) -> np.ndarray:
         X_scaled = self.scaler.transform(X[self.feature_columns])
-        X_seq, _ = self._create_sequences(X_scaled)
+        X_seq, _, indices = self._create_sequences(X_scaled)
         
         if len(X_seq) == 0:
-            return np.zeros((len(X), 2))
+            # Not enough data - return 0.5 (neutral) for all
+            neutral = np.full((len(X), 2), 0.5)
+            return neutral
         
         proba = self.model.predict(X_seq, verbose=0).flatten()
         
-        full_proba = np.zeros((len(X), 2))
-        full_proba[:, 0] = 1.0
-        full_proba[self.sequence_length:, 1] = proba
-        full_proba[self.sequence_length:, 0] = 1 - proba
+        # Default to 0.5 (uncertain) rather than 0.0 for rows without predictions
+        full_proba = np.full((len(X), 2), 0.5)
+        
+        # Map probabilities to their correct indices
+        for i, idx in enumerate(indices):
+            if idx < len(full_proba):
+                full_proba[idx, 1] = proba[i]
+                full_proba[idx, 0] = 1 - proba[i]
+        
         return full_proba
     
     def save(self, path: str):
