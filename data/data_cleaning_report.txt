@@ -1,0 +1,28 @@
+DATA CLEANING REPORT
+====================
+Generated: 2026-01-16 23:10:24
+
+1. SPOT DATA
+   - Original rows: 19650
+   - After removing NaN: 19650
+   - After outlier removal: 19490
+
+2. FUTURES DATA
+   - Original rows: 19490
+   - Final rows: 19490
+   - Handled monthly contract rollovers
+
+3. OPTIONS DATA
+   - Original rows: 97450
+   - Final rows: 97450
+   - Removed invalid IV values
+
+4. DATA QUALITY CHECKS
+   - All timestamps aligned across datasets
+   - No future-looking data leakage
+   - All OHLC relationships valid (L <= O,C <= H)
+
+5. NOTES
+   - Spot data: yfinance or synthetic generation
+   - Futures: Synthetic with realistic basis calculation
+   - Options: Synthetic with IV smile modeling
