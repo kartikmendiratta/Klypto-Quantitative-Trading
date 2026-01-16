@@ -2,8 +2,8 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python"/>
-  <img src="https://img.shields.io/badge/TensorFlow-2.15+-FF6F00?style=for-the-badge&logo=tensorflow&logoColor=white" alt="TensorFlow"/>
-  <img src="https://img.shields.io/badge/XGBoost-2.0+-006400?style=for-the-badge" alt="XGBoost"/>
+  <img src="https://img.shields.io/badge/TensorFlow-2.16+-FF6F00?style=for-the-badge&logo=tensorflow&logoColor=white" alt="TensorFlow"/>
+  <img src="https://img.shields.io/badge/XGBoost-2.0.3+-006400?style=for-the-badge" alt="XGBoost"/>
   <img src="https://img.shields.io/badge/HMM-Regime%20Detection-9B59B6?style=for-the-badge" alt="HMM"/>
   <img src="https://img.shields.io/badge/Status-Production%20Ready-success?style=for-the-badge" alt="Status"/>
 </p>
@@ -112,7 +112,7 @@ This project implements a **Sequential Filtering Architecture** for algorithmic 
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/kartikmendiratta/nifty-quant-trading.git
+git clone https://github.com/kartikmendiratta/Klypto-quant-trading.git
 cd nifty-quant-trading
 
 # 2. Create virtual environment
@@ -130,21 +130,7 @@ pip install -r requirements.txt
 
 ### Dependencies
 
-| Package | Version | Purpose |
-|---------|---------|---------|
-| `pandas` | ≥2.0.0 | Data manipulation |
-| `numpy` | ≥1.24.0 | Numerical computing |
-| `yfinance` | ≥0.2.36 | Market data (spot) |
-| `mibian` | ≥0.1.3 | Black-Scholes Greeks |
-| `hmmlearn` | ≥0.3.0 | Hidden Markov Model |
-| `xgboost` | ≥2.0.0 | Gradient boosting |
-| `tensorflow` | ≥2.15.0 | LSTM neural network |
-| `scikit-learn` | ≥1.3.0 | ML utilities |
-| `matplotlib` | ≥3.8.0 | Visualization |
-| `python-pptx` | ≥0.6.21 | PowerPoint generation |
-
----
-
+in the requirements.txt
 ## 🚀 How to Run
 
 ### Option 1: Run All Notebooks Sequentially (Recommended)
